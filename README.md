@@ -1,6 +1,7 @@
 # AvatarCRUD
 
-Тестовый проект по добавлению и сохраниению юзера и картинок.
+Test project for add new users and files.
+
 - RESTful.
 - JSON format.
 Two html pages. One of them has list of users. Second show form to add new user and file.
