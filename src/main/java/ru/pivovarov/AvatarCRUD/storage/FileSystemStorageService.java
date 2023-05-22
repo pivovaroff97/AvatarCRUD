@@ -1,24 +1,22 @@
 package ru.pivovarov.AvatarCRUD.storage;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.stream.Stream;
-
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ru.pivovarov.AvatarCRUD.exceptionHandling.StorageException;
 import ru.pivovarov.AvatarCRUD.exceptionHandling.StorageFileNotFoundException;
 import ru.pivovarov.AvatarCRUD.service.StorageService;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 
 @Service
 public class FileSystemStorageService implements StorageService {
@@ -31,13 +29,19 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void store(MultipartFile file) {
+	public String store(MultipartFile file) {
 		try {
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file.");
 			}
+			File directory = new File(this.rootLocation.toAbsolutePath().toString());
+			System.out.println("directory: " + directory);
+			if (!directory.exists()) {
+				init();
+			}
+			String fileKey = generateKey(file.getOriginalFilename());
 			Path destinationFile = this.rootLocation.resolve(
-					Paths.get(file.getOriginalFilename()))
+					Paths.get(fileKey))
 					.normalize().toAbsolutePath();
 			if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
 				// This is a security check
@@ -48,6 +52,7 @@ public class FileSystemStorageService implements StorageService {
 				Files.copy(inputStream, destinationFile,
 					StandardCopyOption.REPLACE_EXISTING);
 			}
+			return fileKey;
 		}
 		catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);
@@ -55,39 +60,16 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public Stream<Path> loadAll() {
+	public void deleteByFileKey(String fileKey) {
 		try {
-			return Files.walk(this.rootLocation, 1)
-				.filter(path -> !path.equals(this.rootLocation))
-				.map(this.rootLocation::relativize);
-		}
-		catch (IOException e) {
-			throw new StorageException("Failed to read stored files", e);
-		}
-
-	}
-
-	@Override
-	public Path load(String filename) {
-		return rootLocation.resolve(filename);
-	}
-
-	@Override
-	public Resource loadAsResource(String filename) {
-		try {
-			Path file = load(filename);
-			Resource resource = new UrlResource(file.toUri());
-			if (resource.exists() || resource.isReadable()) {
-				return resource;
+			if (fileKey != null) {
+				Path file = Paths.get(this.rootLocation + "/" + fileKey);
+				System.out.println(file);
+				Files.delete(file);
 			}
-			else {
-				throw new StorageFileNotFoundException(
-						"Could not read file: " + filename);
-
-			}
-		}
-		catch (MalformedURLException e) {
-			throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+		} catch (IOException e) {
+			throw new StorageFileNotFoundException(
+					"Could not find file in storage: " + fileKey);
 		}
 	}
 
@@ -104,5 +86,9 @@ public class FileSystemStorageService implements StorageService {
 		catch (IOException e) {
 			throw new StorageException("Could not initialize storage", e);
 		}
+	}
+
+	private String generateKey(String name) {
+		return DigestUtils.md5Hex(name + LocalDateTime.now().toString());
 	}
 }

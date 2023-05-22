@@ -14,6 +14,14 @@ public class User {
     @Column
     private String email;
 
+    @ManyToOne
+    @JoinColumn(name = "picture_id")
+    private Picture picture;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
     public int getId() {
         return id;
     }
@@ -38,12 +46,35 @@ public class User {
         this.email = email;
     }
 
+    public Picture getPicture() {
+        return picture;
+    }
+
+    public void setPicture(Picture picture) {
+        this.picture = picture;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = Status.valueOf(status.toUpperCase());
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
+                ", picture=" + picture +
+                ", status='" + status + '\'' +
                 '}';
+    }
+
+    public enum Status {
+        ONLINE,
+        OFFLINE
     }
 }
