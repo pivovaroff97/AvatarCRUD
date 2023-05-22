@@ -2,8 +2,8 @@
 
 Тестовый проект по добавлению и сохраниению юзера и картинок.
 - RESTful.
-- Данные в формате JSON.
-Две html страницы. На одной список всех юзеров. На второй форма для добавления юзера и картинки.
+- JSON format.
+Two html pages. One of them has list of users. Second show form to add new user and file.
 Possibilities:
 1. send the file to the server (JPG/PNG avatar picture). Save the image in a directory on the server.
 2. send the user's personal data to the server (name, email, etc.). Store information in a database.
